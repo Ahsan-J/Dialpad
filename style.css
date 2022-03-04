@@ -1,0 +1,63 @@
+.mdi {
+    font-size: 1.5rem;
+}
+
+.dialpad__container {
+    width: 100%;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    display: flex;
+    align-items: center;
+}
+
+.dialpad__number {
+    margin: 0.5rem;
+    padding: 0.6rem 1.8rem;
+    flex:1;
+    border-radius: 0.2rem;
+}
+
+.dialpad__callBtn {
+    border-radius: 50%;
+    height: 4rem;
+    width: 4rem;
+}
+
+.output__container {
+    height: 8rem;
+    font-weight: 700;
+    align-items: center;
+    display: flex;
+    justify-content:space-between;
+}
+
+.output__container > p {
+    font-size: 2rem;
+    margin-bottom: 0;
+}
+
+.output__container > span {
+    cursor: pointer;
+}
+
+.modal__backdrop { 
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background-color: rgba(0,0,0,0.6);
+    display: flex;
+    flex:1;
+    justify-content: center;
+    align-items: center;
+}
+
+.modal__container{
+    background-color: var(--bs-body-bg);
+    width: 70%;
+    height: 70%;
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
