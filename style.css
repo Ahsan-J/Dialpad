@@ -19,22 +19,24 @@
 }
 
 .dialpad__callBtn {
+    margin: 1.5rem;
     border-radius: 50%;
     height: 4rem;
     width: 4rem;
 }
 
 .output__container {
-    height: 8rem;
+    min-height: 6rem;
     font-weight: 700;
-    align-items: center;
     display: flex;
     justify-content:space-between;
+    overflow: hidden;
 }
 
 .output__container > p {
     font-size: 2rem;
     margin-bottom: 0;
+    word-break: break-all
 }
 
 .output__container > span {
@@ -60,4 +62,22 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+}
+
+.incoming__actionContainer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+}
+
+.incoming__actionContainer > button {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.incoming__actionContainer > button > span{
+    font-size: 1rem;
+    margin-right: 0.5rem;
 }

@@ -8,5 +8,5 @@ window.initSocket = (empId = 0) => {
 };
 
 window.getSocket = (empId = 0) => {
-  return !socket ? init(empId) : socket;
+  return !socket ? initSocket(empId) : socket;
 };

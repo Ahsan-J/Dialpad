@@ -1,18 +1,70 @@
 "use strict";
 
+const initialState = {
+  myNumber: "",
+  activeCaller: "",
+  callingTo: "",
+  outputNumber: "",
+};
+
+const reducer = (state, action) => {
+  switch (action.type) {
+    case "SET_ACTIVE_CALLER":
+      return {
+        ...state,
+        activeCaller: action.activeCaller,
+      };
+    case "SET_CALLING_TO":
+      return {
+        ...state,
+        callingTo: action.callingTo || state.outputNumber,
+      };
+    case "SET_CURRENT_NUMBER":
+      return {
+        ...state,
+        myNumber: action.myNumber,
+      };
+    case "SET_OUTPUT_NUMBER":
+      return {
+        ...state,
+        outputNumber: `${state.outputNumber}${action.outputNumber}`,
+      };
+    case "REMOVE_OUTPUT_NUMBER":
+      return {
+        ...state,
+        outputNumber: `${state.outputNumber.slice(0, state.outputNumber.length - 1)}`,
+      };
+    case "RESET_STATES":
+      return {
+        ...state,
+        activeCaller: initialState.activeCaller,
+        callingTo: initialState.callingTo,
+      };
+    default:
+      return state;
+  }
+};
+
 const Dialpad = React.memo((props) => {
-  const { onDialPress } = props;
+  const [state, dispatch] = React.useContext(window.Context);
 
   React.useEffect(() => {
     const onKeyDown = (e) => {
-      if ((/\d/.test(e.key) || ["*", "#"].includes(e.key)) && onDialPress)
-        onDialPress(e.key);
+      if ((/\d/.test(e.key) || ["*", "#"].includes(e.key)) && !state.callingTo) {
+        return dispatch({
+          type: "SET_OUTPUT_NUMBER",
+          outputNumber: e.key
+        })
+      }
+      if (e.key.toLowerCase() == "backspace" && !state.callingTo) {
+        return dispatch({ type: "REMOVE_OUTPUT_NUMBER" })
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [onDialPress]);
+  }, [dispatch, state.callingTo]);
 
   const renderLinearDialPad = React.useMemo(
     () =>
@@ -20,11 +72,15 @@ const Dialpad = React.memo((props) => {
         const value = i + 1;
         const onClick = (e) => {
           e.preventDefault();
-          if (onDialPress) onDialPress(value);
+          dispatch({
+            type: "SET_OUTPUT_NUMBER",
+            outputNumber: value
+          })
         };
         return (
           <button
             key={value}
+            disabled={state.callingTo}
             type="button"
             className="btn btn-primary dialpad__number"
             onClick={onClick}
@@ -33,7 +89,7 @@ const Dialpad = React.memo((props) => {
           </button>
         );
       }),
-    [onDialPress]
+    [dispatch, state.callingTo]
   );
 
   const renderSpecialDialPad = React.useMemo(
@@ -41,11 +97,15 @@ const Dialpad = React.memo((props) => {
       ["*", "0", "#"].map((value) => {
         const onClick = (e) => {
           e.preventDefault();
-          if (onDialPress) onDialPress(value);
+          dispatch({
+            type: "SET_OUTPUT_NUMBER",
+            outputNumber: value
+          })
         };
         return (
           <button
             key={value}
+            disabled={state.callingTo}
             type="button"
             className="btn btn-primary dialpad__number"
             onClick={onClick}
@@ -54,79 +114,73 @@ const Dialpad = React.memo((props) => {
           </button>
         );
       }),
-    [onDialPress]
+    [dispatch, state.callingTo]
   );
+
+  const onCall = React.useCallback(() => {
+    dispatch({
+      type: "SET_CALLING_TO",
+    });
+  }, [dispatch])
 
   return (
     <React.Fragment>
       {renderLinearDialPad}
       {renderSpecialDialPad}
-      <button type="button" className="btn btn-success dialpad__callBtn">
+      <button type="button" disabled={state.callingTo} className="btn btn-success dialpad__callBtn" onClick={onCall}>
         <span className={`mdi mdi-phone`}></span>
       </button>
     </React.Fragment>
   );
 });
 
-const Output = React.memo((props) => {
-  const { onBackPress } = props;
+const App = React.memo(() => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const [state, dispatch] = React.useContext(window.Context);
 
   React.useEffect(() => {
-    const onKeyDown = (e) => {
-      if (e.key.toLowerCase() == "backspace" && onBackPress) onBackPress(e.key);
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [onBackPress]);
+    if (!urlParams.get("number")) {
+      const myNumber = prompt("Enter your number");
+      window.location = window.location.pathname + `?number=${myNumber}`;
+    } else {
+      dispatch({
+        type: "SET_CURRENT_NUMBER",
+        myNumber: urlParams.get("number"),
+      });
+    }
+  }, []);
+
+  const { renderOnIncomingCall } = window.useCalling(state.myNumber);
 
   return (
-    <div className="output__container">
-      <p>{props.children}</p>
-      <span onClick={onBackPress} className="mdi mdi-backspace-outline"></span>
+    <div
+      className="card text-white bg-secondary mb-3"
+      style={{ width: "20rem", minHeight: "36rem" }}
+    >
+      <div className="card-header">
+        <p>Your Number: {state.myNumber} </p>
+        <div className="output__container">
+          <p>{state.outputNumber}</p>
+        </div>
+        {renderOnIncomingCall}
+      </div>
+      <div className="card-body">
+        <div className="dialpad__container">
+          <Dialpad />
+        </div>
+      </div>
+      <audio id="app-audio" loop autoPlay />
     </div>
   );
 });
 
-const App = React.memo(() => {
-  const [outputNumber, setOutputNumber] = React.useState("");
-  const [activeCaller, setActiveCaller] = React.useState({});
-  const [callingTo, setCallingToUser] = React.useState({});
-  const urlParams = new URLSearchParams(window.location.search);
-
-  const onDialPress = React.useCallback((key) => {
-    setOutputNumber((v) => `${v}${key}`);
-  }, []);
-
-  const onBackPress = React.useCallback((key) => {
-    setOutputNumber((v) => `${v.slice(0, v.length - 1)}`);
-  }, []);
-
-  const {} = window.useCalling(urlParams.get("number"));
-
-  React.useEffect(() => {
-    window.initSocket(urlParams.get("number"));
-  }, []);
-
+const AppWrapper = () => {
+  const [state, dispatch] = React.useReducer(reducer, initialState);
   return (
-    <Context.Provider value={{activeCaller, setActiveCaller, callingTo, setCallingToUser}}>
-      <div
-        className="card text-white bg-secondary mb-3"
-        style={{ width: "20rem" }}
-      >
-        <div className="card-header">
-          <p>Your Number: {urlParams.get("number")} </p>
-          <Output onBackPress={onBackPress}>{outputNumber}</Output>
-        </div>
-        <div className="card-body">
-          <div className="dialpad__container">
-            <Dialpad onDialPress={onDialPress} />
-          </div>
-        </div>
-      </div>
+    <Context.Provider value={[state, dispatch]}>
+      <App />
     </Context.Provider>
   );
-});
+};
 
-ReactDOM.render(<App />, document.querySelector("#root"));
+ReactDOM.render(<AppWrapper />, document.querySelector("#root"));

@@ -1,33 +1,66 @@
 window.useCalling = (number) => {
-  const { activeCaller, setActiveCaller, callingTo, setCallingToUser } = React.useContext(window.Context)
+  const [state, dispatch] = React.useContext(window.Context)
   const [incomingOffer, setIncomingOffer] = React.useState();
 
-  const { acceptCall, callUser, processAfterAccept, requestEndCall, endCall } =
-    window.useRTCClient();
+  const { acceptCall, callUser, processAfterAccept, requestEndCall, endCall } = window.useRTCClient(state.myNumber);
 
   const onAcceptIncomingCall = React.useCallback(() => {
     acceptCall(incomingOffer);
-    setActiveCaller(incomingOffer.fromUser)
-  }, [incomingOffer, acceptCall]);
+    const audio = document.querySelector("audio#app-audio");
+    audio.removeAttribute('src');
+    dispatch({
+      type: "SET_ACTIVE_CALLER",
+      activeCaller: incomingOffer.fromUser
+    });
+  }, [incomingOffer, acceptCall, dispatch]);
 
   const onRejectIncomingCall = React.useCallback(() => {
     requestEndCall(incomingOffer.from);
     setIncomingOffer();
-    setCallingToUser()
-    setActiveCaller()
-  }, [incomingOffer, requestEndCall]);
+    dispatch({type: "RESET_STATES"})
+    const audio = document.querySelector("audio#app-audio");
+    audio.removeAttribute('src');
+  }, [incomingOffer, requestEndCall, dispatch]);
 
   const onRejectOutgoingCall = React.useCallback(() => {
-    requestEndCall(callingTo.elsemployees_empid);
+    requestEndCall(state.callingTo);
     setIncomingOffer();
-    setCallingToUser()
-    setActiveCaller()
-  }, [requestEndCall, callingTo]);
+    dispatch({type: "RESET_STATES"})
+    const audio = document.querySelector("audio#app-audio");
+    audio.removeAttribute('src');
+  }, [requestEndCall, state, dispatch]);
+
+  const initiateCall = React.useCallback(async () => {
+    if (state.callingTo) {
+      try {
+        const response = await (await fetch(`${window.env.SOCKET_URL}/socket/active-users`)).json()
+        if(response.some(id => parseInt(id) == parseInt(state.callingTo))) {
+          callUser(state.callingTo);
+          const audio = document.querySelector("audio#app-audio");
+          audio.src = "/assets/waiting.wav";
+        } else {
+          alert(`${state.callingTo} is unavailable at the moment`);
+          if(onRejectOutgoingCall) onRejectOutgoingCall()
+        }
+      } catch (e) {
+        console.log(e);
+      }
+    }
+  }, [state.callingTo, callUser, dispatch, onRejectOutgoingCall])
 
   React.useEffect(() => {
+    initiateCall();
+  }, [initiateCall]);
+
+  React.useEffect(() => {
+    if(!number) return e=>e
+    console.log("Registering Effect")
     const socket = getSocket(number);
     socket.on("call-made", (data) => {
+      console.log("getting call", data)
       setIncomingOffer(data);
+      const audio = document.querySelector("audio#app-audio");
+      audio.src = "/assets/incoming.wav";
     });
     return () => {
       socket.off("call-made");
@@ -35,21 +68,27 @@ window.useCalling = (number) => {
   }, [number]);
 
   React.useEffect(() => {
+    if(!number) return e=>e
     const socket = getSocket(number);
     socket.on("answer-made", async (data) => {
       processAfterAccept(data);
-      setActiveCaller(callingTo)
+      const audio = document.querySelector("audio#app-audio");
+      audio.removeAttribute('src');
+      dispatch({
+        type: "SET_ACTIVE_CALLER",
+        activeCaller: state.callingTo
+      });
     });
     return () => {
       socket.off("answer-made");
     };
-  }, [number, callingTo, processAfterAccept]);
+  }, [number, state.callingTo, dispatch, processAfterAccept]);
 
   React.useEffect(() => {
+    if(!number) return e=>e
     const socket = getSocket(number);
     socket.on("end-call", async () => {
-      setCallingToUser()
-      setActiveCaller()
+      dispatch({type: "RESET_STATES"})
       setIncomingOffer();
       endCall();
     });
@@ -59,6 +98,7 @@ window.useCalling = (number) => {
   }, [number, endCall, incomingOffer]);
 
   React.useEffect(() => {
+    if(!number) return e=>e
     const socket = getSocket(number);
     socket.on("icecandidate-receive", async (data) => {
       const peerConnection = getPeerConnection();
@@ -75,48 +115,31 @@ window.useCalling = (number) => {
     };
   }, [number]);
 
-  const renderOnCall = React.useMemo(() => {
+  const renderOnIncomingCall = React.useMemo(() => {
     return (
-      <Modal
-        style={{ content: { padding: 0 } }}
-        isOpen={!number && callingTo.elsemployees_empid}
-      >
-        <OnCall
-          callUser={callUser}
-          onRejectOutgoingCall={onRejectOutgoingCall}
-        />
-      </Modal>
-    );
-  }, [callingTo, callUser, onRejectOutgoingCall, activeCaller]);
-
+      <div className="incoming__actionContainer">
+        <button disabled={!incomingOffer} type="button" class="btn btn-success" onClick={onAcceptIncomingCall}>
+          <span className={`mdi mdi-phone`}></span>
+          Accept
+        </button>
+        <button disabled={!incomingOffer} type="button" class="btn btn-danger" onClick={onRejectIncomingCall}>
+          <span className={`mdi mdi-phone-hangup`}></span>
+          Reject
+        </button>
+      </div>
+    )
+  }, [onAcceptIncomingCall, incomingOffer, onRejectIncomingCall])
+  
   const renderOngoingCall = React.useMemo(() => {
     return (
-      <OnCalling
-        onReject={incomingOffer ? onRejectIncomingCall : onRejectOutgoingCall}
-      />
-    );
-  }, [incomingOffer, onRejectIncomingCall, onRejectOutgoingCall]);
-
-  const renderIncomingAlert = React.useMemo(() => {
-    return (
-      <Modal
-        style={{
-          content: { padding: 0, background: "transparent", border: 0 },
-        }}
-        isOpen={!number && incomingOffer && incomingOffer.offer}
-      >
-        <ToReceiveCall
-          fromUser={(incomingOffer && incomingOffer.fromUser) || {}}
-          onAcceptIncomingCall={onAcceptIncomingCall}
-          onRejectIncomingCall={onRejectIncomingCall}
-        />
-      </Modal>
-    );
-  }, [incomingOffer, onAcceptIncomingCall, onRejectIncomingCall, activeCaller]);
+      <div className="incoming__actionContainer">
+       
+      </div>
+    )
+  }, [incomingOffer])
 
   return {
-    renderOnCall,
-    renderOngoingCall,
-    renderIncomingAlert,
-  };
+    renderOnIncomingCall,
+    renderOngoingCall
+  }
 };

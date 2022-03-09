@@ -5,15 +5,6 @@ const offerOptions = {
 };
 
 window.useRTCClient = (number) => {
-  if (!/\d+/.test(number)) {
-    return {
-      processAfterAccept: (e) => e,
-      callUser: (e) => e,
-      endCal: (e) => e,
-      requestEndCall: (e) => e,
-      acceptCall: (e) => e,
-    };
-  }
   const localStream = React.useRef(null);
 
   const endCall = React.useCallback(() => {
@@ -49,7 +40,7 @@ window.useRTCClient = (number) => {
         localStream.current ||
         (await navigator.mediaDevices.getUserMedia({ audio: true }));
 
-      const remoteVideo = document.querySelector("audio#remoteVideo");
+      const remoteVideo = document.querySelector("audio#app-audio");
       if (!remoteVideo) return console.log("Element missing");
 
       peerConnection.addEventListener("track", (e) => {
@@ -92,7 +83,7 @@ window.useRTCClient = (number) => {
 
       socket.emit("call-user", {
         offer,
-        to: user.elsemployees_empid, // who is receiving
+        to: toNumber, // who is receiving
         from: number, // who is calling
       });
     },
@@ -111,7 +102,7 @@ window.useRTCClient = (number) => {
         localStream.current ||
         (await navigator.mediaDevices.getUserMedia({ audio: true }));
 
-      const remoteVideo = document.querySelector("audio#remoteVideo");
+      const remoteVideo = document.querySelector("audio#app-audio");
       if (!remoteVideo) return console.log("Element missing");
 
       peerConnection.addEventListener("track", (e) => {
