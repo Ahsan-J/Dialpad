@@ -10,7 +10,7 @@ window.useRTCClient = (number) => {
   const endCall = React.useCallback(() => {
     const peerConnection = window.getPeerConnection();
     if (localStream.current) {
-      localStream.current.getTracks().forEach((track) => track.stop());
+      localStream.current.getAudioTracks().forEach((track) => track.stop());
     }
     localStream.current = null;
     peerConnection.close();
@@ -19,6 +19,7 @@ window.useRTCClient = (number) => {
 
   const requestEndCall = React.useCallback(
     (user_id) => {
+      if(!user_id) return;
       const socket = window.getSocket(number);
       endCall();
       socket.emit("request-end-call", {
@@ -61,7 +62,7 @@ window.useRTCClient = (number) => {
       peerConnection.addEventListener("connectionstatechange", (event) => {
         if (peerConnection.connectionState === "disconnected") {
           try {
-            requestEndCall();
+            requestEndCall(toNumber);
           } catch (e) {
             console.log(e);
           }
@@ -69,11 +70,10 @@ window.useRTCClient = (number) => {
       });
 
       localStream.current
-        .getTracks()
+        .getAudioTracks()
         .forEach((track) =>
           peerConnection.addTrack(track, localStream.current)
         );
-      peerConnection.addStream(localStream.current);
 
       const offer = await peerConnection.createOffer(offerOptions);
       await peerConnection.setLocalDescription(
@@ -123,7 +123,7 @@ window.useRTCClient = (number) => {
       peerConnection.addEventListener("connectionstatechange", (event) => {
         if (peerConnection.connectionState === "disconnected") {
           try {
-            requestEndCall();
+            requestEndCall(data.to);
           } catch (e) {
             console.log(e);
           }
@@ -131,7 +131,7 @@ window.useRTCClient = (number) => {
       });
 
       localStream.current
-        .getTracks()
+        .getAudioTracks()
         .forEach((track) =>
           peerConnection.addTrack(track, localStream.current)
         );

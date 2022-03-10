@@ -2,18 +2,13 @@
 
 const initialState = {
   myNumber: "",
-  activeCaller: "",
   callingTo: "",
   outputNumber: "",
+  incomingOffer: null,
 };
 
 const reducer = (state, action) => {
   switch (action.type) {
-    case "SET_ACTIVE_CALLER":
-      return {
-        ...state,
-        activeCaller: action.activeCaller,
-      };
     case "SET_CALLING_TO":
       return {
         ...state,
@@ -23,6 +18,12 @@ const reducer = (state, action) => {
       return {
         ...state,
         myNumber: action.myNumber,
+      };
+    case "SET_INCOMING_OFFER":
+      return {
+        ...state,
+        incomingOffer: action.incomingOffer,
+        outputNumber: action.incomingOffer.from
       };
     case "SET_OUTPUT_NUMBER":
       return {
@@ -37,8 +38,9 @@ const reducer = (state, action) => {
     case "RESET_STATES":
       return {
         ...state,
-        activeCaller: initialState.activeCaller,
+        outputNumber: initialState.outputNumber,
         callingTo: initialState.callingTo,
+        incomingOffer: initialState.incomingOffer,
       };
     default:
       return state;
@@ -50,21 +52,25 @@ const Dialpad = React.memo((props) => {
 
   React.useEffect(() => {
     const onKeyDown = (e) => {
-      if ((/\d/.test(e.key) || ["*", "#"].includes(e.key)) && !state.callingTo) {
+      if ((/\d/.test(e.key) || ["*", "#"].includes(e.key)) && !(state.callingTo || state.incomingOffer)) {
         return dispatch({
           type: "SET_OUTPUT_NUMBER",
           outputNumber: e.key
         })
       }
-      if (e.key.toLowerCase() == "backspace" && !state.callingTo) {
+      if (e.key.toLowerCase() == "backspace" && !(state.callingTo || state.incomingOffer)) {
         return dispatch({ type: "REMOVE_OUTPUT_NUMBER" })
+      }
+
+      if (e.key.toLowerCase() == "enter" && !(state.callingTo || state.incomingOffer)) {
+        return dispatch({ type: "SET_CALLING_TO" });
       }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [dispatch, state.callingTo]);
+  }, [dispatch, state.callingTo, state.incomingOffer]);
 
   const renderLinearDialPad = React.useMemo(
     () =>
@@ -80,7 +86,7 @@ const Dialpad = React.memo((props) => {
         return (
           <button
             key={value}
-            disabled={state.callingTo}
+            disabled={state.callingTo || state.incomingOffer}
             type="button"
             className="btn btn-primary dialpad__number"
             onClick={onClick}
@@ -89,7 +95,7 @@ const Dialpad = React.memo((props) => {
           </button>
         );
       }),
-    [dispatch, state.callingTo]
+    [dispatch, state.callingTo, state.incomingOffer]
   );
 
   const renderSpecialDialPad = React.useMemo(
@@ -105,7 +111,7 @@ const Dialpad = React.memo((props) => {
         return (
           <button
             key={value}
-            disabled={state.callingTo}
+            disabled={state.callingTo || state.incomingOffer}
             type="button"
             className="btn btn-primary dialpad__number"
             onClick={onClick}
@@ -114,7 +120,7 @@ const Dialpad = React.memo((props) => {
           </button>
         );
       }),
-    [dispatch, state.callingTo]
+    [dispatch, state.callingTo, state.incomingOffer]
   );
 
   const onCall = React.useCallback(() => {
@@ -127,9 +133,15 @@ const Dialpad = React.memo((props) => {
     <React.Fragment>
       {renderLinearDialPad}
       {renderSpecialDialPad}
-      <button type="button" disabled={state.callingTo} className="btn btn-success dialpad__callBtn" onClick={onCall}>
-        <span className={`mdi mdi-phone`}></span>
-      </button>
+      {state.callingTo ? (
+        <button type="button" className="btn btn-danger dialpad__callBtn" onClick={props.onReject}>
+          <span className={`mdi mdi-phone-hangup`}></span>
+        </button>
+      ) : (
+        <button type="button" disabled={state.callingTo || state.incomingOffer} className="btn btn-success dialpad__callBtn" onClick={onCall}>
+          <span className={`mdi mdi-phone`}></span>
+        </button>
+      )}
     </React.Fragment>
   );
 });
@@ -150,7 +162,7 @@ const App = React.memo(() => {
     }
   }, []);
 
-  const { renderOnIncomingCall } = window.useCalling(state.myNumber);
+  const { renderOnIncomingCall, renderOngoingCall, onRejectOutgoingCall } = window.useCalling(state.myNumber);
 
   return (
     <div
@@ -162,14 +174,14 @@ const App = React.memo(() => {
         <div className="output__container">
           <p>{state.outputNumber}</p>
         </div>
+        {renderOngoingCall}
         {renderOnIncomingCall}
       </div>
       <div className="card-body">
         <div className="dialpad__container">
-          <Dialpad />
+          <Dialpad onReject={onRejectOutgoingCall} />
         </div>
       </div>
-      <audio id="app-audio" loop autoPlay />
     </div>
   );
 });
