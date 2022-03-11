@@ -47,105 +47,6 @@ const reducer = (state, action) => {
   }
 };
 
-const Dialpad = React.memo((props) => {
-  const [state, dispatch] = React.useContext(window.Context);
-
-  React.useEffect(() => {
-    const onKeyDown = (e) => {
-      if ((/\d/.test(e.key) || ["*", "#"].includes(e.key)) && !(state.callingTo || state.incomingOffer)) {
-        return dispatch({
-          type: "SET_OUTPUT_NUMBER",
-          outputNumber: e.key
-        })
-      }
-      if (e.key.toLowerCase() == "backspace" && !(state.callingTo || state.incomingOffer)) {
-        return dispatch({ type: "REMOVE_OUTPUT_NUMBER" })
-      }
-
-      if (e.key.toLowerCase() == "enter" && !(state.callingTo || state.incomingOffer)) {
-        return dispatch({ type: "SET_CALLING_TO" });
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [dispatch, state.callingTo, state.incomingOffer]);
-
-  const renderLinearDialPad = React.useMemo(
-    () =>
-      [...Array(9)].map((_, i) => {
-        const value = i + 1;
-        const onClick = (e) => {
-          e.preventDefault();
-          dispatch({
-            type: "SET_OUTPUT_NUMBER",
-            outputNumber: value
-          })
-        };
-        return (
-          <button
-            key={value}
-            disabled={state.callingTo || state.incomingOffer}
-            type="button"
-            className="btn btn-primary dialpad__number"
-            onClick={onClick}
-          >
-            {value}
-          </button>
-        );
-      }),
-    [dispatch, state.callingTo, state.incomingOffer]
-  );
-
-  const renderSpecialDialPad = React.useMemo(
-    () =>
-      ["*", "0", "#"].map((value) => {
-        const onClick = (e) => {
-          e.preventDefault();
-          dispatch({
-            type: "SET_OUTPUT_NUMBER",
-            outputNumber: value
-          })
-        };
-        return (
-          <button
-            key={value}
-            disabled={state.callingTo || state.incomingOffer}
-            type="button"
-            className="btn btn-primary dialpad__number"
-            onClick={onClick}
-          >
-            {value}
-          </button>
-        );
-      }),
-    [dispatch, state.callingTo, state.incomingOffer]
-  );
-
-  const onCall = React.useCallback(() => {
-    dispatch({
-      type: "SET_CALLING_TO",
-    });
-  }, [dispatch])
-
-  return (
-    <React.Fragment>
-      {renderLinearDialPad}
-      {renderSpecialDialPad}
-      {state.callingTo ? (
-        <button type="button" className="btn btn-danger dialpad__callBtn" onClick={props.onReject}>
-          <span className={`mdi mdi-phone-hangup`}></span>
-        </button>
-      ) : (
-        <button type="button" disabled={state.callingTo || state.incomingOffer} className="btn btn-success dialpad__callBtn" onClick={onCall}>
-          <span className={`mdi mdi-phone`}></span>
-        </button>
-      )}
-    </React.Fragment>
-  );
-});
-
 const App = React.memo(() => {
   const urlParams = new URLSearchParams(window.location.search);
   const [state, dispatch] = React.useContext(window.Context);
@@ -162,26 +63,18 @@ const App = React.memo(() => {
     }
   }, []);
 
-  const { renderOnIncomingCall, renderOngoingCall, onRejectOutgoingCall } = window.useCalling(state.myNumber);
+  const { renderCallingState, renderHeader } = window.useCalling(state.myNumber);
 
   return (
     <div
-      className="card text-white bg-secondary mb-3"
+      className="card bg-secondary border-primary mb-3"
       style={{ width: "20rem", minHeight: "36rem" }}
     >
-      <div className="card-header">
-        <p>Your Number: {state.myNumber} </p>
-        <div className="output__container">
-          <p>{state.outputNumber}</p>
-        </div>
-        {renderOngoingCall}
-        {renderOnIncomingCall}
-      </div>
+      {renderHeader}
       <div className="card-body">
-        <div className="dialpad__container">
-          <Dialpad onReject={onRejectOutgoingCall} />
-        </div>
+        {renderCallingState}
       </div>
+      <h6 id="footer">Powered by: Bizz World Communications</h6>
     </div>
   );
 });
