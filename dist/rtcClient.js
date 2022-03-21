@@ -10,7 +10,7 @@ window.useRTCClient = (number) => {
   const endCall = React.useCallback(() => {
     const peerConnection = window.getPeerConnection();
     if (localStream.current) {
-      localStream.current.getAudioTracks().forEach((track) => track.stop());
+      localStream.current.getTracks().forEach((track) => track.stop());
     }
     localStream.current = null;
     peerConnection.close();
@@ -51,7 +51,7 @@ window.useRTCClient = (number) => {
       });
 
       peerConnection.addEventListener("icecandidate", (event) => {
-        if (event.candidate && event.candidate.candidate) {
+        if (event.candidate) {
           socket.emit("icecandidate-sent", {
             candidate: JSON.stringify(event.candidate),
             user_id: number,
@@ -59,18 +59,18 @@ window.useRTCClient = (number) => {
         }
       });
 
-      peerConnection.addEventListener("connectionstatechange", (event) => {
-        if (peerConnection.connectionState === "disconnected") {
-          try {
-            requestEndCall(toNumber);
-          } catch (e) {
-            console.log(e);
-          }
-        }
-      });
+      // peerConnection.addEventListener("connectionstatechange", (event) => {
+      //   if (peerConnection.connectionState === "disconnected") {
+      //     try {
+      //       requestEndCall(toNumber);
+      //     } catch (e) {
+      //       console.log(e);
+      //     }
+      //   }
+      // });
 
       localStream.current
-        .getAudioTracks()
+        .getTracks()
         .forEach((track) =>
           peerConnection.addTrack(track, localStream.current)
         );
@@ -87,7 +87,7 @@ window.useRTCClient = (number) => {
         from: number, // who is calling
       });
     },
-    [number, requestEndCall]
+    [number]
   );
 
   const acceptCall = React.useCallback(
@@ -112,7 +112,7 @@ window.useRTCClient = (number) => {
       });
 
       peerConnection.addEventListener("icecandidate", (event) => {
-        if (event.candidate && peerConnection.localDescription.type) {
+        if (event.candidate) {
           socket.emit("icecandidate-sent", {
             candidate: JSON.stringify(event.candidate),
             user_id: data.from,
@@ -120,18 +120,18 @@ window.useRTCClient = (number) => {
         }
       });
 
-      peerConnection.addEventListener("connectionstatechange", (event) => {
-        if (peerConnection.connectionState === "disconnected") {
-          try {
-            requestEndCall(data.to);
-          } catch (e) {
-            console.log(e);
-          }
-        }
-      });
+      // peerConnection.addEventListener("connectionstatechange", (event) => {
+      //   if (peerConnection.connectionState === "disconnected") {
+      //     try {
+      //       requestEndCall(data.to);
+      //     } catch (e) {
+      //       console.log(e);
+      //     }
+      //   }
+      // });
 
       localStream.current
-        .getAudioTracks()
+        .getTracks()
         .forEach((track) =>
           peerConnection.addTrack(track, localStream.current)
         );
@@ -150,7 +150,7 @@ window.useRTCClient = (number) => {
       });
       window.setPeerConnection(peerConnection);
     },
-    [number, requestEndCall]
+    [number]
   );
 
   const processAfterAccept = React.useCallback(async (data) => {
