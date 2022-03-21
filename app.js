@@ -74,7 +74,6 @@ const App = React.memo(() => {
       <div className="card-body">
         {renderCallingState}
       </div>
-      <h6 id="footer">Powered by: Bizz World Communications</h6>
     </div>
   );
 });
