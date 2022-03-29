@@ -10,7 +10,7 @@ const Timer = React.memo((props) => {
     return () => {
       clearInterval(interval.current);
     };
-  }, []);
+  }, [tick]);
 
   return (
     <span className={props.className || ""} style={props.style}>
@@ -113,11 +113,18 @@ const Dialpad = React.memo((props) => {
     });
   }, [dispatch])
 
+  const onContact = () => {
+    dispatch({
+      type: "SET_SHOW_CONTACTS",
+      showContacts: true
+    });
+  }
+
   return (
     <React.Fragment>
       {renderLinearDialPad}
       {renderSpecialDialPad}
-      <button type="button" className="btn btn-link dialpad__action" onClick={props.onReject}>
+      <button type="button" className="btn btn-link dialpad__action" onClick={onContact}>
         <span className={`mdi mdi-chat-processing`} style={{ color: "var(--bs-primary)", fontSize: "2.5rem" }}></span>
       </button>
       {state.callingTo ? (
@@ -137,7 +144,6 @@ const Dialpad = React.memo((props) => {
 });
 
 const Avatar = React.memo((props) => {
-
 
   return (
     <div className="avatar__container">
@@ -165,10 +171,10 @@ window.useCalling = (number) => {
   }, [state.incomingOffer, requestEndCall, dispatch, number]);
 
   const onRejectOutgoingCall = React.useCallback(() => {
-    requestEndCall(state.callingTo);
+    requestEndCall(state.callingTo || (state.incomingOffer && state.incomingOffer.from));
     dispatch({ type: "RESET_STATES" })
     setCallStatus((getSocket(number) || {}).connected ? "Connected" : "Disconnected")
-  }, [requestEndCall, state.callingTo, dispatch, number]);
+  }, [requestEndCall, state.callingTo, state.incomingOffer, dispatch, number]);
 
   const initiateCall = React.useCallback(async () => {
     if (state.callingTo) {
@@ -188,7 +194,7 @@ window.useCalling = (number) => {
     else {
       requestEndCall(state.callingTo);
     }
-  }, [state.callingTo, dispatch, onRejectOutgoingCall])
+  }, [state.callingTo, onRejectOutgoingCall, requestEndCall, callUser])
 
   React.useEffect(() => {
     initiateCall();
@@ -239,18 +245,18 @@ window.useCalling = (number) => {
     return () => {
       socket.off("call-made");
     };
-  }, [number]);
+  }, [number, dispatch]);
 
   React.useEffect(() => {
     if (!number) return e => e
     const socket = getSocket(number);
     socket.on("answer-made", async (data) => {
       setCallStatus("On Call")
+      processAfterAccept(data);
       dispatch({
         type: "SET_OUTPUT_NUMBER",
         outputNumber: state.callingTo
       });
-      processAfterAccept(data);
     });
     return () => {
       socket.off("answer-made");
@@ -268,7 +274,7 @@ window.useCalling = (number) => {
     return () => {
       socket.off("end-call");
     };
-  }, [number, endCall, state.incomingOffer]);
+  }, [number, endCall, state.incomingOffer, dispatch]);
 
   React.useEffect(() => {
     if (!number) return e => e
@@ -276,9 +282,7 @@ window.useCalling = (number) => {
     socket.on("icecandidate-receive", async (data) => {
       const peerConnection = getPeerConnection();
       try {
-        await peerConnection.addIceCandidate(
-          new RTCIceCandidate(JSON.parse(data))
-        );
+        await peerConnection.addIceCandidate(new RTCIceCandidate(JSON.parse(data)));
       } catch (e) {
         console.error(data, e);
       }
@@ -312,7 +316,7 @@ window.useCalling = (number) => {
         ): null}
       </React.Fragment>
     )
-  }, [onAcceptIncomingCall, state.incomingOffer, onRejectIncomingCall])
+  }, [onAcceptIncomingCall, state.incomingOffer, onRejectIncomingCall, callStatus])
 
   const renderOngoingCall = React.useMemo(() => {
     return (
@@ -345,7 +349,7 @@ window.useCalling = (number) => {
         </div>
       </React.Fragment>
     )
-  }, [state.outputNumber])
+  }, [onRejectOutgoingCall, state.outputNumber])
 
   const renderHeader = React.useMemo(() => {
     return (
@@ -358,7 +362,7 @@ window.useCalling = (number) => {
 
   const renderCallingState = React.useMemo(() => {
     if (state.incomingOffer && callStatus == "Incoming") return renderOnIncomingCall;
-    if (state.callingTo || callStatus == "On Call") return renderOngoingCall
+    if (state.callingTo || (state.incomingOffer && state.incomingOffer.from)) return renderOngoingCall
     return renderDialpad;
   }, [renderDialpad, callStatus, state.callingTo, state.incomingOffer, renderOngoingCall, renderOnIncomingCall])
 

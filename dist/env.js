@@ -1,5 +1,6 @@
 window.env = {
-    "SOCKET_URL": "https://localhost:3000/"
+    "SOCKET_URL": "http://localhost:3000",
+    "companyName": "",
 }
 
 window.Context = React.createContext({});

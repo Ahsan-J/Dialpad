@@ -1,10 +1,14 @@
 "use strict";
 
+const { ContactList } = window;
+
 const initialState = {
   myNumber: "",
   callingTo: "",
   outputNumber: "",
+  showContacts: false,
   incomingOffer: null,
+  contacts: []
 };
 
 const reducer = (state, action) => {
@@ -13,28 +17,45 @@ const reducer = (state, action) => {
       return {
         ...state,
         callingTo: action.callingTo || state.outputNumber,
+        outputNumber: action.callingTo || state.outputNumber,
+        showContacts: false
       };
     case "SET_CURRENT_NUMBER":
       return {
         ...state,
         myNumber: action.myNumber,
+        showContacts: false,
       };
     case "SET_INCOMING_OFFER":
       return {
         ...state,
         incomingOffer: action.incomingOffer,
-        outputNumber: action.incomingOffer.from
+        outputNumber: action.incomingOffer.from,
+        showContacts: false
       };
     case "SET_OUTPUT_NUMBER":
       return {
         ...state,
         outputNumber: `${state.outputNumber}${action.outputNumber}`,
+        showContacts: false,
       };
-    case "REMOVE_OUTPUT_NUMBER":
+      case "REMOVE_OUTPUT_NUMBER":
+        return {
+          ...state,
+          outputNumber: `${state.outputNumber.slice(0, state.outputNumber.length - 1)}`,
+          showContacts: false,
+      };
+    case "SET_SHOW_CONTACTS":
       return {
         ...state,
-        outputNumber: `${state.outputNumber.slice(0, state.outputNumber.length - 1)}`,
-      };
+        showContacts: action.showContacts
+      }
+    case "SET_USER_CONTACTS":
+      return {
+        ...state,
+        contacts: action.contacts,
+        showContacts: false,
+      }
     case "RESET_STATES":
       return {
         ...state,
@@ -63,6 +84,26 @@ const App = React.memo(() => {
     }
   }, []);
 
+  const getUsersContact = async (user_id) => {
+    const response = await (await fetch(`${window.env.SOCKET_URL}/api/bwccrm/userdirectory`,
+      {
+        method: "POST",
+        body: JSON.stringify({ user_id }),
+
+      }
+    )).json();
+    dispatch({
+      type: "SET_USER_CONTACTS",
+      contacts: response.users
+    });
+  };
+
+  React.useEffect(() => {
+    if (state.myNumber) {
+      getUsersContact(parseInt(state.myNumber));
+    }
+  }, [state.myNumber]);
+
   const { renderCallingState, renderHeader } = window.useCalling(state.myNumber);
 
   return (
@@ -72,8 +113,9 @@ const App = React.memo(() => {
     >
       {renderHeader}
       <div className="card-body">
-        {renderCallingState}
+        {state.showContacts ? <ContactList number={state.myNumber} /> : renderCallingState}
       </div>
+      <h6 id="footer_text">Powered by: {window.env.companyName}</h6>
     </div>
   );
 });

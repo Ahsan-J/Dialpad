@@ -1,9 +1,12 @@
-html, body, #root {
+html,
+body,
+#root {
     overflow: hidden;
 }
 
 #root {
     margin: 0.5rem;
+    position: relative;
 }
 
 .mdi {
@@ -38,13 +41,13 @@ html, body, #root {
     flex-direction: column;
 }
 
-.dialpad__number > p{
-    margin:0;
+.dialpad__number>p {
+    margin: 0;
     font-size: 1.2rem;
     font-weight: 700;
 }
 
-.dialpad__number > span{
+.dialpad__number>span {
     font-size: 0.7rem;
     color: var(--bs-gray-400)
 }
@@ -70,33 +73,33 @@ html, body, #root {
     min-height: 6rem;
     font-weight: 700;
     display: flex;
-    justify-content:space-between;
+    justify-content: space-between;
     align-items: flex-end;
     border-bottom: 1px solid var(--bs-primary)
 }
 
-.output__container > p {
+.output__container>p {
     font-size: 2rem;
     margin-bottom: 0;
     word-break: break-all
 }
 
-.output__container > span {
+.output__container>span {
     cursor: pointer;
 }
 
-.modal__backdrop { 
+.modal__backdrop {
     position: absolute;
     inset: 0;
     z-index: 10;
-    background-color: rgba(0,0,0,0.6);
+    background-color: rgba(0, 0, 0, 0.6);
     display: flex;
-    flex:1;
+    flex: 1;
     justify-content: center;
     align-items: center;
 }
 
-.modal__container{
+.modal__container {
     background-color: var(--bs-body-bg);
     width: 70%;
     height: 70%;
@@ -114,17 +117,17 @@ html, body, #root {
     align-items: center;
 }
 
-.incoming__actionContainer > button {
+.incoming__actionContainer>button {
     display: flex;
     flex-direction: row;
     justify-content: center;
     align-items: center;
     border-radius: 50%;
     width: 4rem;
-    height:4rem;
+    height: 4rem;
 }
 
-.incoming__actionContainer > button > span{
+.incoming__actionContainer>button>span {
     font-size: 2rem;
 }
 
@@ -153,7 +156,7 @@ html, body, #root {
     border-bottom: 1px solid var(--bs-primary);
 }
 
-.avatar__container > img{ 
+.avatar__container>img {
     /* border-radius: 50%; */
     object-fit: contain;
     width: 7.5rem;
@@ -161,7 +164,135 @@ html, body, #root {
     margin: 1rem;
 }
 
-#footer {
+#footer_text,#header_text {
     text-align: center;
     font-size: 0.8rem;
+}
+
+.message__container {
+    width: 100%;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-height: 50%;
+    background-color: rgba(255, 255, 255, .1);
+    border-top: 1px solid var(--bs-gray);
+    border-radius: 2px;
+    backdrop-filter: blur(0.8rem);
+    display: flex;
+    flex-direction: column;
+}
+
+.message__body {
+    overflow-y: auto;
+    width: 100%;
+    padding: 0.5rem;
+    /* background-color: red; */
+}
+
+.message__head {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--bs-gray);
+    padding: 0.4rem;
+}
+
+.message__head>button {
+    border-radius: 50%;
+    padding: 0;
+    height: 2rem;
+    width: 2rem;
+}
+
+.message__head>p {
+    margin: 0;
+    margin-left: 0.6rem;
+}
+
+.message__senderBox {
+    background-color: var(--bs-primary);
+    padding: 0.5rem;
+    width: 70%;
+    margin: 0.4rem;
+    border-radius: 0.4rem;
+    float: left;
+    color: var(--bs-white);
+    border-bottom-left-radius: 0;
+}
+
+.message__self {
+    background-color: var(--bs-light);
+    float: right;
+    color: var(--bs-primary);
+    border-bottom-left-radius: 0.4rem;
+    border-bottom-right-radius: 0;
+}
+
+.message__footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: flex-end;
+}
+
+.message__footer>button {
+    border-radius: 50%;
+    padding: 0.2rem;
+    margin: 0.2rem;
+    height: 2.5rem;
+    width: 2.5rem;
+    box-shadow: none;
+}
+
+.message__input {
+    max-height: 5rem;
+    border: none;
+    outline: none;
+    resize: none;
+    margin: 0.5rem 1rem;
+    font-size: 1rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.8;
+    overflow-y: auto;
+    flex: 1;
+    cursor: text;
+}
+
+div:empty:before {
+    content: attr(data-placeholder);
+    color: gray;
+}
+
+.directory__container {
+    max-height: 80vh;
+    overflow-y: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    display: flex;
+    flex-direction: column;
+}
+
+.directory__container::-webkit-scrollbar {
+    display: none;
+}
+
+.contact__containerBox {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid whitesmoke;
+    margin-bottom: 0.5rem;
+}
+
+.contact__containerBox>button {
+    border-radius: 50%;
+    height: 3rem;
+    width: 3rem;
+    padding: 0;
 }

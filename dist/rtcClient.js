@@ -1,7 +1,7 @@
 const offerOptions = {
   offerToReceiveAudio: true,
   offerToReceiveVideo: false,
-  voiceActivityDetection: false,
+  iceRestart: true,
 };
 
 window.useRTCClient = (number) => {
@@ -19,7 +19,7 @@ window.useRTCClient = (number) => {
 
   const requestEndCall = React.useCallback(
     (user_id) => {
-      if(!user_id) return;
+      if (!user_id) return;
       const socket = window.getSocket(number);
       endCall();
       socket.emit("request-end-call", {
@@ -39,12 +39,17 @@ window.useRTCClient = (number) => {
       const socket = window.getSocket(number);
       localStream.current =
         localStream.current ||
-        (await navigator.mediaDevices.getUserMedia({ audio: true }));
+        (await navigator.mediaDevices.getUserMedia({ audio: true, video: false }));
+
+      localStream.current.oninactive = function () {
+        console.log('Stream ended');
+      };
 
       const remoteVideo = document.querySelector("audio#app-audio");
       if (!remoteVideo) return console.log("Element missing");
 
       peerConnection.addEventListener("track", (e) => {
+        console.log(e.streams)
         if (remoteVideo.srcObject !== e.streams[0]) {
           remoteVideo.srcObject = e.streams[0];
         }
@@ -54,20 +59,10 @@ window.useRTCClient = (number) => {
         if (event.candidate) {
           socket.emit("icecandidate-sent", {
             candidate: JSON.stringify(event.candidate),
-            user_id: number,
+            user_id: toNumber,
           });
         }
       });
-
-      // peerConnection.addEventListener("connectionstatechange", (event) => {
-      //   if (peerConnection.connectionState === "disconnected") {
-      //     try {
-      //       requestEndCall(toNumber);
-      //     } catch (e) {
-      //       console.log(e);
-      //     }
-      //   }
-      // });
 
       localStream.current
         .getTracks()
@@ -100,18 +95,24 @@ window.useRTCClient = (number) => {
 
       localStream.current =
         localStream.current ||
-        (await navigator.mediaDevices.getUserMedia({ audio: true }));
+        (await navigator.mediaDevices.getUserMedia({ audio: true, video: false }));
+
+      localStream.current.oninactive = function () {
+        console.log('Stream ended');
+      };
 
       const remoteVideo = document.querySelector("audio#app-audio");
       if (!remoteVideo) return console.log("Element missing");
 
       peerConnection.addEventListener("track", (e) => {
+        console.log(e.streams)
         if (remoteVideo.srcObject !== e.streams[0]) {
           remoteVideo.srcObject = e.streams[0];
         }
       });
 
       peerConnection.addEventListener("icecandidate", (event) => {
+        console.log("IceCandidate", data, event)
         if (event.candidate) {
           socket.emit("icecandidate-sent", {
             candidate: JSON.stringify(event.candidate),
@@ -119,16 +120,6 @@ window.useRTCClient = (number) => {
           });
         }
       });
-
-      // peerConnection.addEventListener("connectionstatechange", (event) => {
-      //   if (peerConnection.connectionState === "disconnected") {
-      //     try {
-      //       requestEndCall(data.to);
-      //     } catch (e) {
-      //       console.log(e);
-      //     }
-      //   }
-      // });
 
       localStream.current
         .getTracks()
